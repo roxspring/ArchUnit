@@ -18,6 +18,7 @@ package com.tngtech.archunit.library;
 import com.google.common.base.Joiner;
 import com.tngtech.archunit.PublicAPI;
 import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.base.HasDescription;
 import com.tngtech.archunit.base.Optional;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -103,7 +104,7 @@ public final class Architectures {
         private final PredicateAggregator<Dependency> irrelevantDependenciesPredicate;
         private final Optional<String> overriddenDescription;
         private boolean optionalLayers;
-        private final boolean allClassesAreCovered;
+        private final Optional<AllClassesAreCoveredSpec> allClassesAreCovered;
 
         private LayeredArchitecture() {
             this(new LayerDefinitions(),
@@ -111,7 +112,7 @@ public final class Architectures {
                     new PredicateAggregator<Dependency>().thatORs(),
                     Optional.<String>absent(),
                     false,
-                    false);
+                    Optional.<AllClassesAreCoveredSpec>absent());
         }
 
         private LayeredArchitecture(LayerDefinitions layerDefinitions,
@@ -119,7 +120,7 @@ public final class Architectures {
                 PredicateAggregator<Dependency> irrelevantDependenciesPredicate,
                 Optional<String> overriddenDescription,
                 boolean optionalLayers,
-                boolean allClassesAreCovered) {
+                Optional<AllClassesAreCoveredSpec> allClassesAreCovered) {
             this.layerDefinitions = layerDefinitions;
             this.dependencySpecifications = dependencySpecifications;
             this.irrelevantDependenciesPredicate = irrelevantDependenciesPredicate;
@@ -188,8 +189,8 @@ public final class Architectures {
             for (LayerDependencySpecification specification : dependencySpecifications) {
                 lines.add(specification.toString());
             }
-            if (allClassesAreCovered) {
-                lines.add("where all classes are covered");
+            if (allClassesAreCovered.isPresent()) {
+                lines.add(allClassesAreCovered.get().getDescription());
             }
             return Joiner.on(lineSeparator()).join(lines);
         }
@@ -207,8 +208,8 @@ public final class Architectures {
             for (LayerDependencySpecification specification : dependencySpecifications) {
                 result.add(evaluateDependenciesShouldBeSatisfied(classes, specification));
             }
-            if (allClassesAreCovered) {
-                result.add(evaluateAllClassesAreCovered(classes, layerDefinitions));
+            if (allClassesAreCovered.isPresent()) {
+                result.add(allClassesAreCovered.get().evaluate(classes, layerDefinitions));
             }
             return result;
         }
@@ -223,29 +224,57 @@ public final class Architectures {
             }
         }
 
-        private static EvaluationResult evaluateAllClassesAreCovered(JavaClasses classes, LayerDefinitions layerDefinitions) {
-            return classes()
-                    .should(new AllClassesAreCovered(layerDefinitions))
-                    .evaluate(classes);
+        @PublicAPI(usage = ACCESS)
+        public LayeredArchitecture whereAllClassesAreCovered() {
+            return whereAllClassesAreCoveredIgnoring(DescribedPredicate.<JavaClass>alwaysFalse());
         }
 
-        static class AllClassesAreCovered extends ArchCondition<JavaClass> {
+        @PublicAPI(usage = ACCESS)
+        public LayeredArchitecture whereAllClassesAreCoveredIgnoring(DescribedPredicate<JavaClass> ignoring) {
+            return new LayeredArchitecture(
+                    layerDefinitions,
+                    dependencySpecifications,
+                    irrelevantDependenciesPredicate,
+                    overriddenDescription,
+                    optionalLayers,
+                    Optional.of(new AllClassesAreCoveredSpec(ignoring))
+            );
+        }
 
-            final LayerDefinitions layerDefinitions;
+        private static class AllClassesAreCoveredSpec implements HasDescription {
 
-            AllClassesAreCovered(LayeredArchitecture.LayerDefinitions layerDefinitions) {
-                super("All classes are covered");
-                this.layerDefinitions = layerDefinitions;
+            private final Optional<DescribedPredicate<JavaClass>> ignoring;
+
+            private AllClassesAreCoveredSpec(DescribedPredicate<JavaClass> ignoring) {
+                this.ignoring = Optional.fromNullable(ignoring);
             }
 
             @Override
-            public void check(JavaClass item, ConditionEvents events) {
-                for (LayerDefinition layerDefinition : layerDefinitions) {
-                    if (layerDefinition.containsPredicate().apply(item)) {
-                        return;
-                    }
+            public String getDescription() {
+                final String description = "where all classes are covered";
+                if (ignoring.isPresent()) {
+                    return description + ", ignoring those where " + ignoring.get().getDescription();
                 }
-                events.add(violated(this, String.format("Class <%s> is not covered", item.getName())));
+                return description;
+            }
+
+            public EvaluationResult evaluate(final JavaClasses classes, final LayerDefinitions layerDefinitions) {
+                return classes()
+                        .should(new ArchCondition<JavaClass>("All classes are covered") {
+                            @Override
+                            public void check(JavaClass item, ConditionEvents events) {
+                                if (ignoring.isPresent() && ignoring.get().apply(item)) {
+                                    return;
+                                }
+                                for (LayerDefinition layerDefinition : layerDefinitions) {
+                                    if (layerDefinition.containsPredicate().apply(item)) {
+                                        return;
+                                    }
+                                }
+                                events.add(violated(this, String.format("Class <%s> is not covered", item.getName())));
+                            }
+                        })
+                        .evaluate(classes);
             }
         }
 
@@ -347,18 +376,6 @@ public final class Architectures {
         public LayerDependencySpecification whereLayer(String name) {
             checkLayerNamesExist(name);
             return new LayerDependencySpecification(name);
-        }
-
-        @PublicAPI(usage = ACCESS)
-        public LayeredArchitecture whereAllClassesAreCovered() {
-            return new LayeredArchitecture(
-                    layerDefinitions,
-                    dependencySpecifications,
-                    irrelevantDependenciesPredicate,
-                    overriddenDescription,
-                    optionalLayers,
-                    true
-            );
         }
 
         private void checkLayerNamesExist(String... layerNames) {

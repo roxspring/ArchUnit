@@ -263,25 +263,50 @@ public class ArchitecturesTest {
     }
 
     @Test
-    public void layered_architecture_where_all_classes_are_covered() {
+    public void layered_architecture_where_all_classes_are_covered_fully() {
         JavaClasses classes = new ClassFileImporter().importClasses(
                 FirstAnyPkgClass.class,
                 SecondThreeAnyClass.class);
 
-        LayeredArchitecture fullyLayeredArchitecture = layeredArchitecture()
+        LayeredArchitecture architecture = layeredArchitecture()
                 .layer("One").definedBy("..first..")
                 .layer("Two").definedBy("..second..")
                 .whereAllClassesAreCovered();
 
-        assertThat(fullyLayeredArchitecture.evaluate(classes).hasViolation())
+        assertThat(architecture.getDescription()).contains("where all classes are covered");
+        assertThat(architecture.evaluate(classes).hasViolation())
                 .isFalse();
+    }
 
-        LayeredArchitecture partiallyLayeredArchitecture = layeredArchitecture()
+    @Test
+    public void layered_architecture_where_all_classes_are_covered_with_ignoring() {
+        JavaClasses classes = new ClassFileImporter().importClasses(
+                FirstAnyPkgClass.class,
+                SecondThreeAnyClass.class);
+
+        LayeredArchitecture architecture = layeredArchitecture()
+                .layer("One").definedBy("..first..")
+                .layer("Two").definedBy("..second..")
+                .whereAllClassesAreCoveredIgnoring(simpleNameContaining("Second"));
+
+        assertThat(architecture.getDescription()).contains("ignoring those where simple name containing");
+        assertThat(architecture.evaluate(classes).hasViolation())
+                .isFalse();
+    }
+
+    @Test
+    public void layered_architecture_where_all_classes_are_not_covered() {
+        JavaClasses classes = new ClassFileImporter().importClasses(
+                FirstAnyPkgClass.class,
+                SecondThreeAnyClass.class);
+
+        LayeredArchitecture architecture = layeredArchitecture()
                 .layer("One").definedBy("..first..")
                 .whereAllClassesAreCovered();
 
-        final EvaluationResult result = partiallyLayeredArchitecture.evaluate(classes);
-        assertThat(result.getFailureReport().getDetails()).contains("Class <" + SecondThreeAnyClass.class.getName() + "> is not covered");
+        final EvaluationResult result = architecture.evaluate(classes);
+        assertThat(result.getFailureReport().getDetails())
+                .contains("Class <" + SecondThreeAnyClass.class.getName() + "> is not covered");
         assertThat(result.hasViolation()).as("result has violation")
                 .isTrue();
     }
