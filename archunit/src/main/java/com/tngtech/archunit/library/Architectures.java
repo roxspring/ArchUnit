@@ -15,17 +15,6 @@
  */
 package com.tngtech.archunit.library;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import com.google.common.base.Joiner;
 import com.tngtech.archunit.PublicAPI;
 import com.tngtech.archunit.base.DescribedPredicate;
@@ -39,6 +28,17 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.EvaluationResult;
 import com.tngtech.archunit.lang.Priority;
 import com.tngtech.archunit.lang.syntax.PredicateAggregator;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -103,12 +103,14 @@ public final class Architectures {
         private final PredicateAggregator<Dependency> irrelevantDependenciesPredicate;
         private final Optional<String> overriddenDescription;
         private boolean optionalLayers;
+        private final boolean allClassesAreCovered;
 
         private LayeredArchitecture() {
             this(new LayerDefinitions(),
                     new LinkedHashSet<LayerDependencySpecification>(),
                     new PredicateAggregator<Dependency>().thatORs(),
                     Optional.<String>absent(),
+                    false,
                     false);
         }
 
@@ -116,12 +118,14 @@ public final class Architectures {
                 Set<LayerDependencySpecification> dependencySpecifications,
                 PredicateAggregator<Dependency> irrelevantDependenciesPredicate,
                 Optional<String> overriddenDescription,
-                boolean optionalLayers) {
+                boolean optionalLayers,
+                boolean allClassesAreCovered) {
             this.layerDefinitions = layerDefinitions;
             this.dependencySpecifications = dependencySpecifications;
             this.irrelevantDependenciesPredicate = irrelevantDependenciesPredicate;
             this.overriddenDescription = overriddenDescription;
             this.optionalLayers = optionalLayers;
+            this.allClassesAreCovered = allClassesAreCovered;
         }
 
         /**
@@ -184,6 +188,9 @@ public final class Architectures {
             for (LayerDependencySpecification specification : dependencySpecifications) {
                 lines.add(specification.toString());
             }
+            if (allClassesAreCovered) {
+                lines.add("where all classes are covered");
+            }
             return Joiner.on(lineSeparator()).join(lines);
         }
 
@@ -200,6 +207,9 @@ public final class Architectures {
             for (LayerDependencySpecification specification : dependencySpecifications) {
                 result.add(evaluateDependenciesShouldBeSatisfied(classes, specification));
             }
+            if (allClassesAreCovered) {
+                result.add(evaluateAllClassesAreCovered(classes, layerDefinitions));
+            }
             return result;
         }
 
@@ -210,6 +220,32 @@ public final class Architectures {
                         result.add(evaluateLayersShouldNotBeEmpty(classes, layerDefinition));
                     }
                 }
+            }
+        }
+
+        private static EvaluationResult evaluateAllClassesAreCovered(JavaClasses classes, LayerDefinitions layerDefinitions) {
+            return classes()
+                    .should(new AllClassesAreCovered(layerDefinitions))
+                    .evaluate(classes);
+        }
+
+        static class AllClassesAreCovered extends ArchCondition<JavaClass> {
+
+            final LayerDefinitions layerDefinitions;
+
+            AllClassesAreCovered(LayeredArchitecture.LayerDefinitions layerDefinitions) {
+                super("All classes are covered");
+                this.layerDefinitions = layerDefinitions;
+            }
+
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                for (LayerDefinition layerDefinition : layerDefinitions) {
+                    if (layerDefinition.containsPredicate().apply(item)) {
+                        return;
+                    }
+                }
+                events.add(violated(this, String.format("Class <%s> is not covered", item.getName())));
             }
         }
 
@@ -277,8 +313,12 @@ public final class Architectures {
         @PublicAPI(usage = ACCESS)
         public LayeredArchitecture as(String newDescription) {
             return new LayeredArchitecture(
-                    layerDefinitions, dependencySpecifications,
-                    irrelevantDependenciesPredicate, Optional.of(newDescription), optionalLayers);
+                    layerDefinitions,
+                    dependencySpecifications,
+                    irrelevantDependenciesPredicate,
+                    Optional.of(newDescription),
+                    optionalLayers,
+                    allClassesAreCovered);
         }
 
         @PublicAPI(usage = ACCESS)
@@ -295,14 +335,30 @@ public final class Architectures {
         public LayeredArchitecture ignoreDependency(
                 DescribedPredicate<? super JavaClass> origin, DescribedPredicate<? super JavaClass> target) {
             return new LayeredArchitecture(
-                    layerDefinitions, dependencySpecifications,
-                    irrelevantDependenciesPredicate.add(dependency(origin, target)), overriddenDescription, optionalLayers);
+                    layerDefinitions,
+                    dependencySpecifications,
+                    irrelevantDependenciesPredicate.add(dependency(origin, target)),
+                    overriddenDescription,
+                    optionalLayers,
+                    allClassesAreCovered);
         }
 
         @PublicAPI(usage = ACCESS)
         public LayerDependencySpecification whereLayer(String name) {
             checkLayerNamesExist(name);
             return new LayerDependencySpecification(name);
+        }
+
+        @PublicAPI(usage = ACCESS)
+        public LayeredArchitecture whereAllClassesAreCovered() {
+            return new LayeredArchitecture(
+                    layerDefinitions,
+                    dependencySpecifications,
+                    irrelevantDependenciesPredicate,
+                    overriddenDescription,
+                    optionalLayers,
+                    true
+            );
         }
 
         private void checkLayerNamesExist(String... layerNames) {

@@ -1,11 +1,5 @@
 package com.tngtech.archunit.library;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -34,6 +28,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.simpleNameContaining;
@@ -260,6 +260,30 @@ public class ArchitecturesTest {
                 .ignoreDependency(SecondThreeAnyClass.class, SomePkgClass.class);
 
         assertThat(layeredArchitecture.evaluate(classes).hasViolation()).as("result has violation").isFalse();
+    }
+
+    @Test
+    public void layered_architecture_where_all_classes_are_covered() {
+        JavaClasses classes = new ClassFileImporter().importClasses(
+                FirstAnyPkgClass.class,
+                SecondThreeAnyClass.class);
+
+        LayeredArchitecture fullyLayeredArchitecture = layeredArchitecture()
+                .layer("One").definedBy("..first..")
+                .layer("Two").definedBy("..second..")
+                .whereAllClassesAreCovered();
+
+        assertThat(fullyLayeredArchitecture.evaluate(classes).hasViolation())
+                .isFalse();
+
+        LayeredArchitecture partiallyLayeredArchitecture = layeredArchitecture()
+                .layer("One").definedBy("..first..")
+                .whereAllClassesAreCovered();
+
+        final EvaluationResult result = partiallyLayeredArchitecture.evaluate(classes);
+        assertThat(result.getFailureReport().getDetails()).contains("Class <" + SecondThreeAnyClass.class.getName() + "> is not covered");
+        assertThat(result.hasViolation()).as("result has violation")
+                .isTrue();
     }
 
     @Test
