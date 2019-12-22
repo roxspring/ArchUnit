@@ -18,7 +18,6 @@ package com.tngtech.archunit.library;
 import com.google.common.base.Joiner;
 import com.tngtech.archunit.PublicAPI;
 import com.tngtech.archunit.base.DescribedPredicate;
-import com.tngtech.archunit.base.HasDescription;
 import com.tngtech.archunit.base.Optional;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -189,9 +188,6 @@ public final class Architectures {
             for (LayerDependencySpecification specification : dependencySpecifications) {
                 lines.add(specification.toString());
             }
-            if (allClassesAreCovered.isPresent()) {
-                lines.add(allClassesAreCovered.get().getDescription());
-            }
             return Joiner.on(lineSeparator()).join(lines);
         }
 
@@ -241,21 +237,12 @@ public final class Architectures {
             );
         }
 
-        private static class AllClassesAreCoveredSpec implements HasDescription {
+        private static class AllClassesAreCoveredSpec {
 
             private final Optional<DescribedPredicate<JavaClass>> ignoring;
 
             private AllClassesAreCoveredSpec(DescribedPredicate<JavaClass> ignoring) {
                 this.ignoring = Optional.fromNullable(ignoring);
-            }
-
-            @Override
-            public String getDescription() {
-                final String description = "where all classes are covered";
-                if (ignoring.isPresent()) {
-                    return description + ", ignoring those where " + ignoring.get().getDescription();
-                }
-                return description;
             }
 
             public EvaluationResult evaluate(final JavaClasses classes, final LayerDefinitions layerDefinitions) {

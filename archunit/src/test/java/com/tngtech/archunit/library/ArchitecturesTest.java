@@ -273,7 +273,6 @@ public class ArchitecturesTest {
                 .layer("Two").definedBy("..second..")
                 .whereAllClassesAreCovered();
 
-        assertThat(architecture.getDescription()).contains("where all classes are covered");
         assertThat(architecture.evaluate(classes).hasViolation())
                 .isFalse();
     }
@@ -288,7 +287,6 @@ public class ArchitecturesTest {
                 .layer("One").definedBy("..first..")
                 .whereAllClassesAreCoveredIgnoring(simpleNameContaining("Second"));
 
-        assertThat(architecture.getDescription()).contains("ignoring those where simple name containing");
         assertThat(architecture.evaluate(classes).hasViolation())
                 .isFalse();
     }
