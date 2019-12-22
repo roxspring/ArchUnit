@@ -103,7 +103,7 @@ public final class Architectures {
         private final PredicateAggregator<Dependency> irrelevantDependenciesPredicate;
         private final Optional<String> overriddenDescription;
         private boolean optionalLayers;
-        private final Optional<AllClassesAreCoveredSpec> allClassesAreCovered;
+        private final Optional<AllClassesAreContainedInLayersSpec> allClassesAreCovered;
 
         private LayeredArchitecture() {
             this(new LayerDefinitions(),
@@ -111,7 +111,7 @@ public final class Architectures {
                     new PredicateAggregator<Dependency>().thatORs(),
                     Optional.<String>absent(),
                     false,
-                    Optional.<AllClassesAreCoveredSpec>absent());
+                    Optional.<AllClassesAreContainedInLayersSpec>absent());
         }
 
         private LayeredArchitecture(LayerDefinitions layerDefinitions,
@@ -119,7 +119,7 @@ public final class Architectures {
                 PredicateAggregator<Dependency> irrelevantDependenciesPredicate,
                 Optional<String> overriddenDescription,
                 boolean optionalLayers,
-                Optional<AllClassesAreCoveredSpec> allClassesAreCovered) {
+                Optional<AllClassesAreContainedInLayersSpec> allClassesAreCovered) {
             this.layerDefinitions = layerDefinitions;
             this.dependencySpecifications = dependencySpecifications;
             this.irrelevantDependenciesPredicate = irrelevantDependenciesPredicate;
@@ -221,27 +221,27 @@ public final class Architectures {
         }
 
         @PublicAPI(usage = ACCESS)
-        public LayeredArchitecture whereAllClassesAreCovered() {
-            return whereAllClassesAreCoveredIgnoring(DescribedPredicate.<JavaClass>alwaysFalse());
+        public LayeredArchitecture ensureAllClassesAreContainedInLayers() {
+            return ensureAllClassesAreContainedInLayersIgnoring(DescribedPredicate.<JavaClass>alwaysFalse());
         }
 
         @PublicAPI(usage = ACCESS)
-        public LayeredArchitecture whereAllClassesAreCoveredIgnoring(DescribedPredicate<JavaClass> ignoring) {
+        public LayeredArchitecture ensureAllClassesAreContainedInLayersIgnoring(DescribedPredicate<JavaClass> ignoring) {
             return new LayeredArchitecture(
                     layerDefinitions,
                     dependencySpecifications,
                     irrelevantDependenciesPredicate,
                     overriddenDescription,
                     optionalLayers,
-                    Optional.of(new AllClassesAreCoveredSpec(ignoring))
+                    Optional.of(new AllClassesAreContainedInLayersSpec(ignoring))
             );
         }
 
-        private static class AllClassesAreCoveredSpec {
+        private static class AllClassesAreContainedInLayersSpec {
 
             private final Optional<DescribedPredicate<JavaClass>> ignoring;
 
-            private AllClassesAreCoveredSpec(DescribedPredicate<JavaClass> ignoring) {
+            private AllClassesAreContainedInLayersSpec(DescribedPredicate<JavaClass> ignoring) {
                 this.ignoring = Optional.fromNullable(ignoring);
             }
 

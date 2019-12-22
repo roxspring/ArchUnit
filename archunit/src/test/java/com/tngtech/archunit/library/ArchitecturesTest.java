@@ -263,7 +263,7 @@ public class ArchitecturesTest {
     }
 
     @Test
-    public void layered_architecture_where_all_classes_are_covered_fully() {
+    public void layered_architecture_ensure_all_classes_are_contained_in_layers_are_covered_fully() {
         JavaClasses classes = new ClassFileImporter().importClasses(
                 FirstAnyPkgClass.class,
                 SecondThreeAnyClass.class);
@@ -271,35 +271,35 @@ public class ArchitecturesTest {
         LayeredArchitecture architecture = layeredArchitecture()
                 .layer("One").definedBy("..first..")
                 .layer("Two").definedBy("..second..")
-                .whereAllClassesAreCovered();
+                .ensureAllClassesAreContainedInLayers();
 
         assertThat(architecture.evaluate(classes).hasViolation())
                 .isFalse();
     }
 
     @Test
-    public void layered_architecture_where_all_classes_are_covered_with_ignoring() {
+    public void layered_architecture_ensure_all_classes_are_contained_in_layers_with_ignoring() {
         JavaClasses classes = new ClassFileImporter().importClasses(
                 FirstAnyPkgClass.class,
                 SecondThreeAnyClass.class);
 
         LayeredArchitecture architecture = layeredArchitecture()
                 .layer("One").definedBy("..first..")
-                .whereAllClassesAreCoveredIgnoring(simpleNameContaining("Second"));
+                .ensureAllClassesAreContainedInLayersIgnoring(simpleNameContaining("Second"));
 
         assertThat(architecture.evaluate(classes).hasViolation())
                 .isFalse();
     }
 
     @Test
-    public void layered_architecture_where_all_classes_are_not_covered() {
+    public void layered_architecture_ensure_all_classes_are_contained_in_layers() {
         JavaClasses classes = new ClassFileImporter().importClasses(
                 FirstAnyPkgClass.class,
                 SecondThreeAnyClass.class);
 
         LayeredArchitecture architecture = layeredArchitecture()
                 .layer("One").definedBy("..first..")
-                .whereAllClassesAreCovered();
+                .ensureAllClassesAreContainedInLayers();
 
         final EvaluationResult result = architecture.evaluate(classes);
         assertThat(result.getFailureReport().getDetails())
