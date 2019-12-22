@@ -286,7 +286,6 @@ public class ArchitecturesTest {
 
         LayeredArchitecture architecture = layeredArchitecture()
                 .layer("One").definedBy("..first..")
-                .layer("Two").definedBy("..second..")
                 .whereAllClassesAreCoveredIgnoring(simpleNameContaining("Second"));
 
         assertThat(architecture.getDescription()).contains("ignoring those where simple name containing");
