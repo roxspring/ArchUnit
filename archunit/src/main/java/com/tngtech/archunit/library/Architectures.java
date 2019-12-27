@@ -512,6 +512,8 @@ public final class Architectures {
         private Map<String, String[]> adapterPackageIdentifiers = new LinkedHashMap<>();
         private boolean optionalLayers = false;
         private List<IgnoredDependency> ignoredDependencies = new ArrayList<>();
+        private String[] ensureAllClassesAreContainedIgnoringPackageIdentifiers = new String[0];
+        private boolean ensureAllClassesAreContained;
 
         private OnionArchitecture() {
             overriddenDescription = Optional.absent();
@@ -575,6 +577,26 @@ public final class Architectures {
             return this;
         }
 
+        /**
+         * Ensure that all classes under test are contained within the onion architecture definition.
+         */
+        @PublicAPI(usage = ACCESS)
+        public OnionArchitecture ensureAllClassesAreContainedInArchitecture() {
+            ensureAllClassesAreContained = true;
+            return this;
+        }
+
+        /**
+         * Ensure that classes under test are contained within the onion architecture definition,
+         * ignoring those in any specified package.
+         */
+        @PublicAPI(usage = ACCESS)
+        public OnionArchitecture ensureAllClassesAreContainedInArchitectureIgnoring(String... packageIdentifiers) {
+            ensureAllClassesAreContained = true;
+            ensureAllClassesAreContainedIgnoringPackageIdentifiers = packageIdentifiers;
+            return this;
+        }
+
         private LayeredArchitecture layeredArchitectureDelegate() {
             LayeredArchitecture layeredArchitectureDelegate = layeredArchitecture()
                     .layer(DOMAIN_MODEL_LAYER).definedBy(domainModelPackageIdentifiers)
@@ -592,9 +614,15 @@ public final class Architectures {
                         .layer(adapterLayer).definedBy(adapter.getValue())
                         .whereLayer(adapterLayer).mayNotBeAccessedByAnyLayer();
             }
+
             for (IgnoredDependency ignoredDependency : this.ignoredDependencies) {
                 layeredArchitectureDelegate = ignoredDependency.ignoreFor(layeredArchitectureDelegate);
             }
+
+            if (ensureAllClassesAreContained) {
+                layeredArchitectureDelegate = layeredArchitectureDelegate.ensureAllClassesAreContainedInLayersIgnoring(ensureAllClassesAreContainedIgnoringPackageIdentifiers);
+            }
+
             return layeredArchitectureDelegate.as(getDescription());
         }
 
