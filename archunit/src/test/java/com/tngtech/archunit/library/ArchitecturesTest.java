@@ -263,7 +263,7 @@ public class ArchitecturesTest {
     }
 
     @Test
-    public void layered_architecture_ensure_all_classes_are_contained_in_layers_are_covered_fully() {
+    public void layered_architecture_ensure_all_classes_are_contained_in_architecture_fully() {
         JavaClasses classes = new ClassFileImporter().importClasses(
                 FirstAnyPkgClass.class,
                 SecondThreeAnyClass.class);
@@ -317,7 +317,7 @@ public class ArchitecturesTest {
 
         final EvaluationResult result = architecture.evaluate(classes);
         assertThat(result.getFailureReport().getDetails())
-                .contains("Class <" + SecondThreeAnyClass.class.getName() + "> is not covered");
+                .contains("Class <" + SecondThreeAnyClass.class.getName() + "> is not contained in architecture");
         assertThat(result.hasViolation()).as("result has violation")
                 .isTrue();
     }
@@ -475,7 +475,8 @@ public class ArchitecturesTest {
         ));
     }
 
-    public void onion_architecture_ensure_all_classes_are_contained_in_architecture_are_covered_fully() {
+    @Test
+    public void onion_architecture_ensure_all_classes_are_contained_in_architecture_are_contained_in_architecture_fully() {
         OnionArchitecture architecture = onionArchitecture()
                 .domainModels(absolute("onionarchitecture.domain.model"))
                 .domainServices(absolute("onionarchitecture.domain.service"))
@@ -487,7 +488,7 @@ public class ArchitecturesTest {
         JavaClasses classes = new ClassFileImporter().importPackages(getClass().getPackage().getName() + ".testclasses.onionarchitecture");
 
         assertThat(architecture.evaluate(classes).getFailureReport().getDetails())
-                .doesNotContain("Class <" + RestAdapterLayerClass.class.getName() + "> is not covered");
+                .doesNotContain("Class <" + RestAdapterLayerClass.class.getName() + "> is not contained in architecture");
     }
 
     @Test
@@ -502,7 +503,7 @@ public class ArchitecturesTest {
         JavaClasses classes = new ClassFileImporter().importPackages(getClass().getPackage().getName() + ".testclasses.onionarchitecture");
 
         assertThat(architecture.evaluate(classes).getFailureReport().getDetails())
-                .doesNotContain("Class <" + RestAdapterLayerClass.class.getName() + "> is not covered");
+                .doesNotContain("Class <" + RestAdapterLayerClass.class.getName() + "> is not contained in architecture");
     }
 
     @Test
@@ -521,7 +522,7 @@ public class ArchitecturesTest {
             System.out.println(detail);
         }
         assertThat(result.getFailureReport().getDetails())
-                .contains("Class <" + RestAdapterLayerClass.class.getName() + "> is not covered");
+                .contains("Class <" + RestAdapterLayerClass.class.getName() + "> is not contained in architecture");
         assertThat(result.hasViolation()).as("result has violation")
                 .isTrue();
     }

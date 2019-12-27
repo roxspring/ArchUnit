@@ -264,7 +264,7 @@ public final class Architectures {
 
             public EvaluationResult evaluate(final JavaClasses classes, final LayerDefinitions layerDefinitions) {
                 return classes()
-                        .should(new ArchCondition<JavaClass>("All classes are covered") {
+                        .should(new ArchCondition<JavaClass>("All classes are contained in architecture") {
                             @Override
                             public void check(JavaClass item, ConditionEvents events) {
                                 if (ignoring.isPresent() && ignoring.get().apply(item)) {
@@ -275,7 +275,7 @@ public final class Architectures {
                                         return;
                                     }
                                 }
-                                events.add(violated(this, String.format("Class <%s> is not covered", item.getName())));
+                                events.add(violated(this, String.format("Class <%s> is not contained in architecture", item.getName())));
                             }
                         })
                         .evaluate(classes);
