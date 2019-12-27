@@ -226,7 +226,7 @@ public final class Architectures {
         }
 
         @PublicAPI(usage = ACCESS)
-        public LayeredArchitecture ensureAllClassesAreContainedInLayersIgnoring(DescribedPredicate<JavaClass> ignoring) {
+        public LayeredArchitecture ensureAllClassesAreContainedInLayersIgnoring(DescribedPredicate<? super JavaClass> ignoring) {
             return new LayeredArchitecture(
                     layerDefinitions,
                     dependencySpecifications,
@@ -237,7 +237,7 @@ public final class Architectures {
             );
         }
 
-        private static class AllClassesAreContainedInLayersSpec {
+        private static class AllClassesAreContainedInLayersSpec<T> {
 
             private final Optional<DescribedPredicate<JavaClass>> ignoring;
 
