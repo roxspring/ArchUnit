@@ -230,6 +230,16 @@ public final class Architectures {
 
         /**
          * Ensure that classes under test are contained within a defined layer of the architecture,
+         * ignoring those in any specified package.
+         */
+        @PublicAPI(usage = ACCESS)
+        public LayeredArchitecture ensureAllClassesAreContainedInLayersIgnoring(String... packageIdentifiers) {
+            String description = String.format("'%s'", Joiner.on("', '").join(packageIdentifiers));
+            return ensureAllClassesAreContainedInLayersIgnoring(resideInAnyPackage(packageIdentifiers).as(description));
+        }
+
+        /**
+         * Ensure that classes under test are contained within a defined layer of the architecture,
          * ignoring those matching a specified predicate.
          */
         @PublicAPI(usage = ACCESS)

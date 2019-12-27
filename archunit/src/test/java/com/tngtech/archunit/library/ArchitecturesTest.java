@@ -292,6 +292,20 @@ public class ArchitecturesTest {
     }
 
     @Test
+    public void layered_architecture_ensure_all_classes_are_contained_in_layers_with_ignoring_packages() {
+        JavaClasses classes = new ClassFileImporter().importClasses(
+                FirstAnyPkgClass.class,
+                SecondThreeAnyClass.class);
+
+        LayeredArchitecture architecture = layeredArchitecture()
+                .layer("One").definedBy("..first..")
+                .ensureAllClassesAreContainedInLayersIgnoring("..second..");
+
+        assertThat(architecture.evaluate(classes).hasViolation())
+                .isFalse();
+    }
+
+    @Test
     public void layered_architecture_ensure_all_classes_are_contained_in_layers() {
         JavaClasses classes = new ClassFileImporter().importClasses(
                 FirstAnyPkgClass.class,
