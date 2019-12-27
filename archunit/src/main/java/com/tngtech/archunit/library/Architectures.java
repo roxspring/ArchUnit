@@ -220,11 +220,18 @@ public final class Architectures {
             }
         }
 
+        /**
+         * Ensure that all classes under test are contained within a defined layer of the architecture.
+         */
         @PublicAPI(usage = ACCESS)
         public LayeredArchitecture ensureAllClassesAreContainedInLayers() {
             return ensureAllClassesAreContainedInLayersIgnoring(DescribedPredicate.<JavaClass>alwaysFalse());
         }
 
+        /**
+         * Ensure that classes under test are contained within a defined layer of the architecture,
+         * ignoring those matching a specified predicate.
+         */
         @PublicAPI(usage = ACCESS)
         public LayeredArchitecture ensureAllClassesAreContainedInLayersIgnoring(DescribedPredicate<? super JavaClass> ignoring) {
             return new LayeredArchitecture(
